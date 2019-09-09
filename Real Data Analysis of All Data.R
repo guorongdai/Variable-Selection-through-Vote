@@ -1,0 +1,415 @@
+#install.packages("glmnet",repos="https://cran.revolutionanalytics.com/")
+#install.packages("rqPen",repos="https://cran.revolutionanalytics.com/")
+#install.packages("doParallel",repos='https://cran.revolutionanalytics.com/')
+#install.packages("bda",repos='https://cran.revolutionanalytics.com/')
+#install.packages("cqrReg",repos='https://cran.revolutionanalytics.com/')
+#install.packages("ncvreg",repos="https://cran.revolutionanalytics.com/")
+#install.packages("quantreg",repos="https://cran.revolutionanalytics.com/")
+
+setwd("/home/grad/rondai/vsv")
+
+suppressMessages({
+  library(MASS)
+  library(glmnet)
+  library(rqPen)
+  library(doParallel)
+  library(bda)
+  library(cqrReg)
+  library(ncvreg)
+  library(quantreg)
+})
+
+
+##############################################################
+# Functions
+
+##################################
+# composite quantile regression with scad
+cqr = function(y, x, tau=.5, lambda, penalty="SCAD", 
+               initial_beta=NULL, maxin=100, maxout=20, eps = 1e-05, coef.cutoff=1e-08,  
+               a=3.7, ...)
+{
+  #cleanInputs(y, x, lambda, initial_beta, penalty, a)
+  dyn.load("cqpen.so")
+  require(rqPen)
+  
+  # Set penalty function
+  if(penalty == "SCAD"){
+    pentype = as.integer(0)  
+  } else if (penalty == "MCP"){
+    pentype = as.integer(1)
+  } else{
+    pentype = as.integer(2)
+  }
+  
+  if( is.null(initial_beta) ){
+    if(length(tau)>1)
+    {
+      initial_beta = mapply(LASSO.fit,y=y,x=x,tau=0.5,lambda=lambda,
+                            coef.cutoff=coef.cutoff,intercept=1,SIMPLIFY=F)
+    } else
+    {
+      initial_beta = mapply(LASSO.fit,y=y,x=x,tau=tau,lambda=lambda,
+                            coef.cutoff=coef.cutoff,intercept=1,SIMPLIFY=F)
+    }
+  }
+  
+  beta=lapply(initial_beta,function(x)x[-1])
+  intval = lapply(y,quantile,probs=tau)
+  residuals = mapply(myf11,y=y,x=x,beta=beta,intval=intval,SIMPLIFY=F)
+  # intval = initial_beta[1]
+  
+  K         = as.integer(length(y))
+  n         = as.integer(length(y[[1]]))
+  y         = lapply(y,as.double)
+  p         = as.integer( ncol(x[[1]]) )
+  xdouble     = matrix(as.double(unlist(x)),n,p*K)
+  tau       = as.double(tau)
+  m         = as.integer(length(tau))
+  a         = as.double(a)
+  eps       = as.double(eps)
+  maxin     = as.integer(maxin)
+  maxout=as.integer(maxout)
+  betadouble=as.double(unlist(beta))
+  intvaldouble=as.double(unlist(intval))
+  residualsdouble=matrix(as.double(unlist(residuals)),n,m*K)
+  lambda    = as.double(lambda)
+  
+  # groupl1 = rep(0, p)
+  
+  out=.Fortran("multicqpen",xdouble,betadouble,intvaldouble,residualsdouble,
+               n,p,K,tau,m,a,eps,maxin,maxout,lambda,pentype)
+  
+  out[[2]][abs(out[[2]])<coef.cutoff]=0
+  
+  coefficients=list()
+  
+  for (i in 1:K)
+  {
+    beta[[i]]=out[[2]][((i-1)*p+1):(i*p)]
+    intval[[i]]=out[[3]][((i-1)*m+1):(i*m)]
+    coefficients[[i]]=c(intval[[i]],beta[[i]])
+  }
+  
+  return(coefficients)
+}
+
+myf11=function(y,x,beta,intval) sapply(intval,function(y,x,beta,intval) y-x%*%beta-intval,
+                                       y=y,x=x,beta=beta)
+
+##################################
+
+# kernel density
+kern=function(x.new,x,b)
+{
+  n=length(x.new)
+  y=numeric(n)
+  for(i in 1:n) y[i]=mean(dnorm((x.new[i]-x)/b))/b
+  
+  return(y)
+}
+
+# weighted multiple quantile estimator
+wmq=function(theta,n,p,x,y,tau,rinv,inc)
+{
+  theta0=apply(as.matrix(theta),2,mean)
+  #theta0=lm(y~x)$coefficients[-1]
+  he=(y-x%*%as.matrix(theta0))[,1]
+  hbeta=quantile(he,tau,type=6)
+  band=0.9*(n^(-1/5))*min(sd(he),IQR(he,type=6)/1.34)
+  hden=kern(x.new=hbeta,x=he,b=band)
+  
+  f=diag(hden)
+  h=f%*%rinv%*%f
+  w.theta=(h%*%rep(1,k))[,1]/sum(h)
+  owtheta=rep(0,p)
+  owtheta[inc]=w.theta%*%as.matrix(theta) 
+  
+  return(list("owtheta"=owtheta,"hden"=hden))
+}
+
+wmq1=function(theta,n,p,x,y,tau,inc)
+{
+  k=length(tau)
+  
+  theta0=apply(as.matrix(theta),2,mean)
+  #theta0=lm(y~x)$coefficients[-1]
+  he=(y-x%*%as.matrix(theta0))[,1]
+  hbeta=quantile(he,tau,type=6)
+  band=0.9*(n^(-1/5))*min(sd(he),IQR(he,type=6)/1.34)
+  hden=kern(x.new=hbeta,x=he,b=band)
+  
+  
+  hh=matrix(0,k,k)
+  for(j in 1:k)
+  {
+    for(m in 1:k) hh[(j),(m)]=(min(tau[j],tau[m])-tau[j]*tau[m])/(hden[j]*hden[m])
+  }
+  h=solve(hh)
+  
+  w.theta=as.vector(h%*%rep(1,k))/sum(h)
+  owtheta=rep(0,p)
+  owtheta[inc]=w.theta%*%as.matrix(theta) 
+  
+  return(list("owtheta"=owtheta,"hden"=hden))
+}
+##############################################################
+
+registerDoParallel(56)
+
+##################
+# training data
+load("eye.RData") # data
+xx.raw=x.raw
+yy.raw=y.raw
+##################
+
+##########################
+# Basic setting
+n=length(yy.raw)
+p=ncol(xx.raw)
+tau=seq(1/10,9/10,1/10)
+k=length(tau)
+cut.off=seq(ceiling(0.5*k)+2,k,1) # threshold
+u=length(cut.off) 
+
+r=matrix(0,k,k)
+for(j in 1:k)
+{
+  for(m in 1:k) r[j,m]=(min(tau[j],tau[m])-tau[j]*tau[m])
+}
+rinv=solve(r)
+##############
+
+
+##############
+# lambda set 
+lambda.cqr=exp(seq(-0.8,0,length=10)) # lambda set for cqr
+lambda.qr=exp(seq(-5.4,-2.7,length=50)) # lambda set for owqr 
+lambda.ls=exp(seq(-5.3,-4.5,length=10)) # lambda set for ls
+lambda.lad=exp(seq(-3.3,-2.5,length=10)) # lambda set for lad
+lcqr=length(lambda.cqr)
+lqr=length(lambda.qr)
+lls=length(lambda.ls)
+llad=length(lambda.lad)
+##############
+##########################
+
+
+##################
+# cross validation
+cv=5 # number of folds
+n1=length(yy.raw)/cv # number observations in each fold
+set.seed(7)
+ind.cv=sample(1:n) # rearrange the observations for cross-validation
+##################
+
+
+
+##############
+# least square
+error1=foreach(i=1:lls,.errorhandling="remove") %dopar%
+{
+  pels=0
+  for(j in 1:cv)
+  {
+    ind.v=ind.cv[((j-1)*n1+1):(j*n1)]
+    x=xx.raw[-ind.v,]
+    y=yy.raw[-ind.v]
+    x.v=xx.raw[ind.v,]
+    y.v=yy.raw[ind.v]
+    
+    fitls=ncvreg(x,y,family="gaussian",lambda=lambda.ls[i],penalty="SCAD")$beta[,1]
+    resid.ls=y.v-fitls[1]-x.v%*%fitls[-1]
+    
+    pels=pels+sum(resid.ls^2)
+  }
+  pels
+}
+hvtls=ncvreg(xx.raw,yy.raw,family="gaussian",
+             lambda=lambda.ls[which.min(error1)],penalty="SCAD")$beta[,1]
+##############
+
+
+##############
+# least absolute deviation
+error4=foreach(m=1:llad,.errorhandling="pass")%dopar%
+  #error4=foreach(m=1:llad)%dopar%
+  {
+    pe=0
+    
+    for(l in 1:cv)
+    {
+      ind.v=ind.cv[((l-1)*n1+1):(l*n1)]
+      x=xx.raw[-ind.v,]
+      y=yy.raw[-ind.v]
+      x.v=xx.raw[ind.v,]
+      y.v=yy.raw[ind.v]
+      
+      fit=cqr(list(y),list(x),tau=0.5,lambda=lambda.lad[m])[[1]]
+      resid=y.v-fit[1]-x.v%*%fit[-1]
+      pe=pe+sum(resid*(0.5-(resid<0)))
+    }
+    pe
+  }
+
+for (tt in 1:llad)
+{
+  if(!is.numeric(error4[[tt]])) error4[[tt]]=100
+}
+
+hvtlad=cqr(list(yy.raw),list(xx.raw),tau=0.5,
+           lambda=lambda.lad[which.min(error4)],penalty="SCAD")[[1]]
+
+##############
+
+
+##############
+# composite quantile
+error2=foreach(i=1:lcqr,.errorhandling="remove") %dopar%
+{
+  pecqr=0
+  for(j in 1:cv)
+  {
+    ind.v=ind.cv[((j-1)*n1+1):(j*n1)]
+    x=xx.raw[-ind.v,]
+    y=yy.raw[-ind.v]
+    x.v=xx.raw[ind.v,]
+    y.v=yy.raw[ind.v]
+    
+    fitcqr=cqr(list(y),list(x),tau=tau,lambda=lambda.cqr[i],penalty="SCAD")[[1]]
+    resid.cqr=sapply(1:k,function(z) y.v-fitcqr[z]-x.v%*%fitcqr[-(1:k)])
+    
+    for(m in 1:k) pecqr=pecqr+sum(resid.cqr[,m]*(tau[m]-(resid.cqr[,m]<0)))
+  }
+  pecqr
+}
+hvtcqr=cqr(list(yy.raw),list(xx.raw),tau=tau,
+           lambda=lambda.cqr[which.min(error2)],penalty="SCAD")[[1]]
+##############
+
+
+
+##############
+# multiple quantiles regression
+hvtq=matrix(0,nrow=k,ncol=p+1)
+for(j in 1:k)
+{
+  error3=foreach(m=1:lqr,.errorhandling="pass")%dopar%
+    #error3=foreach(m=1:lqr)%dopar%
+    {
+      pe=0
+      
+      for(l in 1:cv)
+      {
+        ind.v=ind.cv[((l-1)*n1+1):(l*n1)]
+        x=xx.raw[-ind.v,]
+        y=yy.raw[-ind.v]
+        x.v=xx.raw[ind.v,]
+        y.v=yy.raw[ind.v]
+        
+        fit=cqr(list(y),list(x),tau=tau[j],lambda=lambda.qr[m])[[1]]
+        resid=y.v-fit[1]-x.v%*%fit[-1]
+        pe=pe+sum(resid*(tau[j]-(resid<0)))
+      }
+      pe
+    }
+  
+  for (tt in 1:lqr)
+  {
+    if(!is.numeric(error3[[tt]])) error3[[tt]]=100
+  }
+  
+  hvtq[j,]=cqr(list(yy.raw),list(xx.raw),tau=tau[j],
+               lambda=lambda.qr[which.min(error3)],penalty="SCAD")[[1]]
+  
+}
+hvtq=hvtq[,-1]
+##############
+
+##############################################################
+# vote
+count=apply(hvtq,2,function(x) sum(x!=0))
+for(i in 1:u) 
+{
+  if(!(sum(!(count<cut.off[i]))<n)) cut.off[i]=0
+}
+if(any(cut.off==0)) cut.off=cut.off[-which(cut.off==0)]  
+u=length(cut.off)
+##############################################################
+
+##############################################################
+# choose the threshold kappa by validation data
+owqhvt.m=matrix(0,nrow=u,ncol=p)
+
+
+pe.vote=foreach(j=1:u)%dopar%
+{
+  pe.cv.w=0
+  
+  kappa=cut.off[j]
+  for (l in 1:cv)
+  {
+    ind.v=ind.cv[((l-1)*n1+1):(l*n1)]
+    x=xx.raw[-ind.v,]
+    y=yy.raw[-ind.v]
+    x.v=xx.raw[ind.v,]
+    y.v=yy.raw[ind.v]
+    
+    if (all(count<kappa))
+    {
+      hvtq.cv=t(suppressWarnings(rq(y~1,tau=tau))$coefficients) # naive estimator
+      tvt=apply(hvtq.cv,2,mean)
+      he=y
+      hbeta=quantile(he,tau,type=6)
+      band=0.9*((n-n1)^(-1/5))*min(sd(he),IQR(he)/1.34)
+      hden=kern(x.new=hbeta,x=he,b=band)
+      
+      f=diag(hden)
+      h=f%*%rinv%*%f
+      w.hvtq=(h%*%rep(1,k))[,1]/sum(h)
+      v=rep(0,p)
+      owqhvt.m[j,]=v
+      
+      w.ob=(rinv%*%hden)[,1]
+      
+      resid.cv=apply(hvtq.cv,1,function(z) y.v-z[1])
+      pe.cv=sapply(1:k,function(z) sum(resid.cv[,z]*(tau[z]-(resid.cv[,z]<0))))
+      pe.cv.w=pe.cv.w+sum(pe.cv*w.ob) 
+    } else
+    {
+      inc=which(!(count<kappa))
+      
+      x1=as.matrix(x[,inc])
+      x.v1=as.matrix(x.v[,inc])
+      hvtq.cv=matrix(0,nrow=k,ncol=length(inc)+1)
+      
+      for(w in 1:k) hvtq.cv[w,]=cqr(list(y),list(x1),tau=tau[w],lambda=0)[[1]]
+      v=wmq(hvtq.cv[,-1],n,p,x1,y,tau,rinv,inc)
+      owqhvt.m[j,]=v$owtheta
+      
+      hden=v$hden
+      w.ob=(rinv%*%hden)[,1]
+      
+      resid.cv=apply(hvtq.cv,1,function(z) y.v-x.v1%*%as.matrix(z[-1])-z[1])
+      pe.cv=sapply(1:k,function(z) sum(resid.cv[,z]*(tau[z]-(resid.cv[,z]<0))))
+      pe.cv.w=pe.cv.w+sum(pe.cv*w.ob) 
+    }
+  }
+  pe.cv.w
+}
+
+kappa=cut.off[which.min(pe.vote)]
+
+res.v=which(!(count<kappa))
+res.lad=which(hvtlad[-1]!=0)
+res.ls=which(hvtls[-1]!=0)
+res.cqr=which(hvtcqr[-(1:k)]!=0)
+
+print("###############Model Size###############")
+
+cat("vote ",length(res.v),"\n")
+cat("lad ", length(res.lad),"\n")
+cat("ls ",length(res.ls),"\n")
+cat("cqr ",length(res.cqr),"\n")
+
