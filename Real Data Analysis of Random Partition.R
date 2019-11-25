@@ -304,7 +304,7 @@ res=foreach(uu=1:s,.errorhandling="remove") %dopar%
     
     hvtlad=cqr(list(yy.raw),list(xx.raw),tau=0.5,
                lambda=lambda.lad[which.min(error4)],penalty="SCAD")[[1]]
-    perror.lad=(yy.v-hvtlad[1]-xx.v%*%hvtlad[-1])/2
+    perror.lad=(yy.v-hvtlad[1]-xx.v%*%hvtlad[-1])
     ##############
     
     
@@ -438,7 +438,7 @@ res=foreach(uu=1:s,.errorhandling="remove") %dopar%
       
       x1=as.matrix(xx.raw[,inc])
       lad.v=rq(yy.raw~x1)$coefficients
-      perror.ladv=(yy.v-lad.v[1]-as.matrix(xx.v[,inc])%*%lad.v[-1])/2
+      perror.ladv=(yy.v-lad.v[1]-as.matrix(xx.v[,inc])%*%lad.v[-1])
     }
     
     if (all(count<kappa.cqr))
