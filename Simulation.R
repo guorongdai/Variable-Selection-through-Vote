@@ -1,7 +1,7 @@
 #install.packages("glmnet",repos="https://cran.revolutionanalytics.com/")
 #install.packages("rqPen",repos="https://cran.revolutionanalytics.com/")
 #install.packages("doParallel",repos='https://cran.revolutionanalytics.com/')
-#install.packages("bda",repos='https://cran.revolutionanalytics.com/')
+#install.packages("LaplacesDemon",repos='https://cran.revolutionanalytics.com/')
 #install.packages("cqrReg",repos='https://cran.revolutionanalytics.com/')
 #install.packages("ncvreg",repos="https://cran.revolutionanalytics.com/")
 #install.packages("quantreg",repos="https://cran.revolutionanalytics.com/")
@@ -11,7 +11,7 @@ suppressMessages({
   library(glmnet)
   library(rqPen)
   library(doParallel)
-  library(bda)
+  library(LaplacesDemon)
   library(cqrReg)
   library(ncvreg)
   library(quantreg)
@@ -228,8 +228,8 @@ error=foreach(i=1:s,.errorhandling="remove") %dopar%
   #e=rbeta(n,1,3)
   #e=rlap(n)
   #e=rgamma(n,1,1)
-  #e=rmixnorm(n,c(0.5,0.5),c(-2,2),c(1,1))
-  #e=rmixnorm(n,c(0.5,0.5),c(0,0),c(1,0.5^3))
+  #e=rnormm(n,c(0.5,0.5),c(-2,2),c(1,1))
+  #e=rnormm(n,c(0.5,0.5),c(0,0),c(1,0.5^3))
   #e=runif(n,-1,1)
   ##############################
   y=(x%*%vt+e)[,1]
@@ -245,8 +245,8 @@ error=foreach(i=1:s,.errorhandling="remove") %dopar%
   #e.v=rbeta(n1,1,3)
   #e.v=rlap(n1)
   #e.v=rgamma(n1,1,1)
-  #e.v=rmixnorm(n1,c(0.5,0.5),c(-2,2),c(1,1))
-  #e.v=rmixnorm(n1,c(0.5,0.5),c(0,0),c(1,0.5^3))
+  #e.v=rnormm(n1,c(0.5,0.5),c(-2,2),c(1,1))
+  #e.v=rnormm(n1,c(0.5,0.5),c(0,0),c(1,0.5^3))
   #e.v=runif(n1,-1,1)
   ##############################
   y.v=(x.v%*%vt+e.v)[,1]
