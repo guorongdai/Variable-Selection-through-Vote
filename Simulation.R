@@ -55,7 +55,7 @@ cqr = function(y, x, tau=.5, lambda, penalty="SCAD",
   beta=lapply(initial_beta,function(x)x[-1])
   intval = lapply(y,quantile,probs=tau)
   residuals = mapply(myf11,y=y,x=x,beta=beta,intval=intval,SIMPLIFY=F)
-  # intval = initial_beta[1]
+  
   
   K         = as.integer(length(y))
   n         = as.integer(length(y[[1]]))
@@ -73,7 +73,6 @@ cqr = function(y, x, tau=.5, lambda, penalty="SCAD",
   residualsdouble=matrix(as.double(unlist(residuals)),n,m*K)
   lambda    = as.double(lambda)
   
-  # groupl1 = rep(0, p)
   
   out=.Fortran("multicqpen",xdouble,betadouble,intvaldouble,residualsdouble,
                n,p,K,tau,m,a,eps,maxin,maxout,lambda,pentype)
@@ -131,7 +130,6 @@ wmq1=function(theta,n,p,x,y,tau,inc)
   k=length(tau)
   
   theta0=apply(as.matrix(theta),2,mean)
-  #theta0=lm(y~x)$coefficients[-1]
   he=(y-x%*%as.matrix(theta0))[,1]
   hbeta=quantile(he,tau,type=6)
   band=0.9*(n^(-1/5))*min(sd(he),IQR(he,type=6)/1.34)
@@ -264,21 +262,11 @@ error=foreach(i=1:s,.errorhandling="remove") %dopar%
     fitls.m[m,]=fitls[-1]
     resid.ls=y.v-fitls[1]-x.v%*%fitls[-1]
     
-    #if(length(fitls)==p)
-    #{
-      #fitls.m[m,]=fitls
-      #resid.ls=y.v-x.v%*%fitls
-    #} else
-    #{
-      #fitls.m[m,]=fitls[-1]
-      #resid.ls=y.v-fitls[1]-x.v%*%fitls[-1]
-    #}
     
     pels[m]=sum(resid.ls^2)
   }
   hvtls=fitls.m[which.min(pels),] # ls estimator
   hvtls.oracle=rep(0,p)
-  #hvtls.oracle[ind]=lm(y~x.oracle)$coefficients[-1]
   hvtls.oracle[ind]=ncvreg(x.oracle,y,family="gaussian",lambda=0,penalty="SCAD")$beta[-1,1]
   ##############################################################
   
@@ -311,11 +299,7 @@ error=foreach(i=1:s,.errorhandling="remove") %dopar%
     pe=numeric(lqr)
     for(m in 1:lqr)
     {
-      #fit=pqr(x,y,tau=tau[j],lambda=lambda.qr[m],intercept=T,penalty="scad",initial="lasso")
-      #fit=QICD(y,x,tau=tau[j],lambda=lambda.qr[m],intercept=T,penalty="SCAD")
       fit=cqr(list(y),list(x),tau=tau[j],lambda=lambda.qr[m])[[1]]
-      #fit=suppressWarnings(cv.rq.pen(x,y,tau=tau[j],lambda=lambda.qr[m],
-      #                               intercept=T,penalty="SCAD"))$models[[1]]$coefficients
       fit.m[m,]=fit
       
       
@@ -329,7 +313,6 @@ error=foreach(i=1:s,.errorhandling="remove") %dopar%
   
   hvtq.oracle=matrix(0,k,p)
   for(w in 1:k) hvtq.oracle[w,ind]=cqr(list(y),list(x.oracle),tau=tau[w],lambda=0)[[1]][-1]
-  #hvtq.oracle[,ind]=t(rq(y~x.oracle,tau=tau)$coefficients)[,-1]
   ##############################################################
   
   ##############################################################
@@ -374,9 +357,7 @@ error=foreach(i=1:s,.errorhandling="remove") %dopar%
       hvtq.cv=matrix(0,nrow=k,ncol=length(inc)+1)
       
       for(w in 1:k) hvtq.cv[w,]=cqr(list(y),list(x1),tau=tau[w],lambda=0)[[1]]
-      #hvtq.cv=t(rq(y~x1,tau=tau)$coefficients) # estimators with threshold kappa
       v=wmq(hvtq.cv[,-1],n,p,x1,y,tau,rinv,inc)
-      #v=wmq1(hvtq.cv[,-1],n,p,x1,y,tau,inc)
       owqhvt.m[j,]=v$owtheta
       
       hden=v$hden
@@ -394,7 +375,6 @@ error=foreach(i=1:s,.errorhandling="remove") %dopar%
   ##############################################################
   # oracle optimal multiple quantiles estimator
   owqhvt.oracle=wmq(hvtq.oracle[,ind],n,p,x.oracle,y,tau,rinv,ind)$owtheta
-  #owqhvt.oracle=wmq1(hvtq.oracle[,ind],n,p,x.oracle,y,tau,ind)$owtheta
   
   ##############################################################
   
