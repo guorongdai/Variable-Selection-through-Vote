@@ -55,7 +55,6 @@ cqr = function(y, x, tau=.5, lambda, penalty="SCAD",
   beta=lapply(initial_beta,function(x)x[-1])
   intval = lapply(y,quantile,probs=tau)
   residuals = mapply(myf11,y=y,x=x,beta=beta,intval=intval,SIMPLIFY=F)
-  # intval = initial_beta[1]
   
   K         = as.integer(length(y))
   n         = as.integer(length(y[[1]]))
@@ -73,7 +72,6 @@ cqr = function(y, x, tau=.5, lambda, penalty="SCAD",
   residualsdouble=matrix(as.double(unlist(residuals)),n,m*K)
   lambda    = as.double(lambda)
   
-  # groupl1 = rep(0, p)
   
   out=.Fortran("multicqpen",xdouble,betadouble,intvaldouble,residualsdouble,
                n,p,K,tau,m,a,eps,maxin,maxout,lambda,pentype)
@@ -301,11 +299,8 @@ for(i in 1:s)
     pe=numeric(lqr)
     for(m in 1:lqr) 
     {
-      #fit=pqr(x,y,tau=tau[j],lambda=lambda.qr[m],intercept=T,penalty="scad",initial="lasso")
-      #fit=QICD(y,x,tau=tau[j],lambda=lambda.qr[m],intercept=T,penalty="SCAD")
       fit=cqr(list(y),list(x),tau=tau[j],lambda=lambda.qr[m])[[1]]
-      #fit=suppressWarnings(cv.rq.pen(x,y,tau=tau[j],lambda=lambda.qr[m],
-      #                               intercept=T,penalty="SCAD"))$models[[1]]$coefficients
+    
       fit.m[m,]=fit
       
       
