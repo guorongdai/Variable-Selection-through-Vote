@@ -217,7 +217,7 @@ for(i in 1:s)
   #e=rlaplace(n)
   #e=rgamma(n,1,1)
   #e=rnormm(n,c(0.5,0.5),c(-2,2),c(1,1))
-  #e=rnormm(n,c(0.5,0.5),c(0,0),c(1,0.5^3))
+  #e=rnormm(n,c(0.5,0.5),c(0,0),c(1,0.5^3))*sqrt(6)
   #e=runif(n,-3,3)
   ##############################
   y=(x%*%vt+e)[,1]
@@ -235,7 +235,7 @@ for(i in 1:s)
   #e.v=rlaplace(n1)
   #e.v=rgamma(n1,1,1)
   #e.v=rnormm(n1,c(0.5,0.5),c(-2,2),c(1,1))
-  #e.v=rnormm(n1,c(0.5,0.5),c(0,0),c(1,0.5^3))
+  #e.v=rnormm(n1,c(0.5,0.5),c(0,0),c(1,0.5^3))*sqrt(6)
   #e.v=runif(n1,-3,3)
   ##############################
   y.v=(x.v%*%vt+e.v)[,1]
