@@ -472,7 +472,6 @@ res=foreach(uu=1:s,.errorhandling="remove") %dopar%
     ve
   }
 
-length(res)
 res.m=t(matrix(unlist(res),nrow=length(ve),ncol=length(res)))
 colnames(res.m)=c("selection of lsv","pe of lsv",
                   "selection of ls","pe of ls",
@@ -480,7 +479,7 @@ colnames(res.m)=c("selection of lsv","pe of lsv",
                   "selection of lad","pe of lad",
                   "selection of cqrv","pe of cqrv",
                   "selection of cqr","pe of cqr")
-res.m
+
 print("#########################Mean#########################")
 apply(res.m,2,mean)
 
