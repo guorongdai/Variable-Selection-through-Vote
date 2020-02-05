@@ -16,8 +16,6 @@ for(i in 1:ncol(x0))
 {
   xx=x0[,i]
   if((max(xx)>thr) & ((max(xx)-min(xx))>1)) ind=c(ind,i)
-  #if((max(xx)>thr)) ind=c(ind,i)
-  #if((max(xx)-min(xx))>1) ind=c(ind,i)
 }
 x1=x0[,ind]
 
