@@ -227,7 +227,7 @@ error=foreach(i=1:s,.errorhandling="remove") %dopar%
   #e=rlaplace(n)
   #e=rgamma(n,1,1)
   #e=rnormm(n,c(0.5,0.5),c(-2,2),c(1,1))
-  #e=rnormm(n,c(0.5,0.5),c(0,0),c(1,0.5^3))
+  #e=rnormm(n,c(0.5,0.5),c(0,0),c(1,0.5^3))*sqrt(6)
   #e=runif(n,-3,3)
   ##############################
   y=(x%*%vt+e)[,1]
