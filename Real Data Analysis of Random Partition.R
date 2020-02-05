@@ -222,7 +222,7 @@ res=foreach(uu=1:s,.errorhandling="remove") %dopar%
     
     ##############
     # least square
-    error1=foreach(i=1:lls,.errorhandling="remove") %dopar%
+    error1=foreach(i=1:lls,.errorhandling="remove") %do%
       {
         pels=0
         for(j in 1:cv)
@@ -247,7 +247,7 @@ res=foreach(uu=1:s,.errorhandling="remove") %dopar%
     
     ##############
     # composite quantile
-    error2=foreach(i=1:lcqr,.errorhandling="remove") %dopar%
+    error2=foreach(i=1:lcqr,.errorhandling="remove") %do%
       {
         pecqr=0
         for(j in 1:cv)
@@ -272,7 +272,7 @@ res=foreach(uu=1:s,.errorhandling="remove") %dopar%
     
     ##############
     # least absolute deviation
-    error4=foreach(m=1:llad,.errorhandling="pass")%dopar%
+    error4=foreach(m=1:llad,.errorhandling="pass")%do%
       {
         pe=0
         
@@ -307,7 +307,7 @@ res=foreach(uu=1:s,.errorhandling="remove") %dopar%
     hvtq=matrix(0,nrow=k,ncol=p+1)
     for(j in 1:k)
     {
-      error3=foreach(m=1:lqr,.errorhandling="pass")%dopar%
+      error3=foreach(m=1:lqr,.errorhandling="pass")%do%
         {
           pe=0
           
