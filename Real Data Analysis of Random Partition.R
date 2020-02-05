@@ -55,7 +55,6 @@ cqr = function(y, x, tau=.5, lambda, penalty="SCAD",
   beta=lapply(initial_beta,function(x)x[-1])
   intval = lapply(y,quantile,probs=tau)
   residuals = mapply(myf11,y=y,x=x,beta=beta,intval=intval,SIMPLIFY=F)
-  # intval = initial_beta[1]
   
   K         = as.integer(length(y))
   n         = as.integer(length(y[[1]]))
@@ -73,7 +72,6 @@ cqr = function(y, x, tau=.5, lambda, penalty="SCAD",
   residualsdouble=matrix(as.double(unlist(residuals)),n,m*K)
   lambda    = as.double(lambda)
   
-  # groupl1 = rep(0, p)
   
   out=.Fortran("multicqpen",xdouble,betadouble,intvaldouble,residualsdouble,
                n,p,K,tau,m,a,eps,maxin,maxout,lambda,pentype)
@@ -158,7 +156,6 @@ registerDoParallel(56)
 ##################
 # data
 load("eye.RData") # data
-#x.raw=x.raw[,1:300]
 ##################
 
 ##########################
@@ -276,7 +273,6 @@ res=foreach(uu=1:s,.errorhandling="remove") %dopar%
     ##############
     # least absolute deviation
     error4=foreach(m=1:llad,.errorhandling="pass")%dopar%
-      #error4=foreach(m=1:llad)%dopar%
       {
         pe=0
         
@@ -312,7 +308,6 @@ res=foreach(uu=1:s,.errorhandling="remove") %dopar%
     for(j in 1:k)
     {
       error3=foreach(m=1:lqr,.errorhandling="pass")%dopar%
-        #error3=foreach(m=1:lqr)%dopar%
         {
           pe=0
           
