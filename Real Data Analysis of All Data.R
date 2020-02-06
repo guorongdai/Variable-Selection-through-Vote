@@ -198,7 +198,7 @@ llad=length(lambda.lad)
 # cross validation
 cv=5 # number of folds
 n1=length(yy.raw)/cv # number observations in each fold
-set.seed(7)
+set.seed(123)
 ind.cv=sample(1:n) # rearrange the observations for cross-validation
 ##################
 
