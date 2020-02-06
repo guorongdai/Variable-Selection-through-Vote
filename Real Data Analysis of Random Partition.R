@@ -194,7 +194,7 @@ ve=numeric(12)
 
 res=foreach(uu=1:s,.errorhandling="remove") %dopar%
   {
-    set.seed(77*uu)
+    set.seed(7*uu)
     train=sample(1:length(y.raw),n)
     
     ############
