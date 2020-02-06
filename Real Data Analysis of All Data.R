@@ -183,7 +183,7 @@ rinv=solve(r)
 ##############
 # lambda set 
 lambda.cqr=exp(seq(-0.8,0,length=10)) # lambda set for cqr
-lambda.qr=exp(seq(-5.4,-3.5,length=30)) # lambda set for owqr 
+lambda.qr=exp(seq(-5.4,-3.5,length=20)) # lambda set for owqr 
 lambda.ls=exp(seq(-5.3,-4.5,length=10)) # lambda set for ls
 lambda.lad=exp(seq(-3.3,-2.5,length=10)) # lambda set for lad
 lcqr=length(lambda.cqr)
