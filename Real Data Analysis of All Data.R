@@ -9,10 +9,8 @@ setwd("/home/grad/rondai/vsv")
 
 suppressMessages({
   library(MASS)
-  library(glmnet)
   library(rqPen)
   library(doParallel)
-  library(cqrReg)
   library(ncvreg)
   library(quantreg)
 })
@@ -153,7 +151,7 @@ wmq1=function(theta,n,p,x,y,tau,inc)
 }
 ##############################################################
 
-registerDoParallel(56)
+registerDoParallel(detectCores())
 
 ##################
 # training data
