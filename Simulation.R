@@ -8,11 +8,9 @@
 
 suppressMessages({
   library(MASS)
-  library(glmnet)
   library(rqPen)
   library(doParallel)
   library(LaplacesDemon)
-  library(cqrReg)
   library(ncvreg)
   library(quantreg)
 })
