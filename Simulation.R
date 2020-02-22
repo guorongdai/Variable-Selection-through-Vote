@@ -151,7 +151,7 @@ wmq1=function(theta,n,p,x,y,tau,inc)
 }
 ##############################################################
 
-registerDoParallel(56)
+registerDoParallel(detectCores())
 ##########################
 # Basic setting
 s=200
