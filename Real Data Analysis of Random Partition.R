@@ -152,7 +152,7 @@ registerDoParallel(detectCores())
 
 ##################
 # data
-load("eye.RData") # data
+load("eye.RData") # load the data from "Real Data Processing.R"
 ##################
 
 ##########################
