@@ -5,7 +5,6 @@
 #install.packages("ncvreg",repos="https://cran.revolutionanalytics.com/")
 #install.packages("quantreg",repos="https://cran.revolutionanalytics.com/")
 
-setwd("/home/grad/rondai/vsv")
 
 suppressMessages({
   library(MASS)
@@ -354,7 +353,7 @@ res=foreach(uu=1:s,.errorhandling="remove") %dopar%
     owqhvt.m=matrix(0,nrow=u,ncol=p)
     
     
-    pe.vote=foreach(j=1:u)%dopar%
+    pe.vote=foreach(j=1:u)%do%
       {
         pe.cv.w=0
         pe.cv.lad=0
