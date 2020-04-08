@@ -1,3 +1,6 @@
+# install.packages("Biobase")
+# install.packages("GEOquery")
+
 library(Biobase)
 library(GEOquery)
 
