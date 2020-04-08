@@ -5,8 +5,6 @@
 #install.packages("ncvreg",repos="https://cran.revolutionanalytics.com/")
 #install.packages("quantreg",repos="https://cran.revolutionanalytics.com/")
 
-setwd("/home/grad/rondai/vsv")
-
 suppressMessages({
   library(MASS)
   library(rqPen)
@@ -155,7 +153,7 @@ registerDoParallel(detectCores())
 
 ##################
 # training data
-load("eye.RData") # data
+load("eye.RData") # load the data from "Real Data Processing.R"
 xx.raw=x.raw
 yy.raw=y.raw
 ##################
